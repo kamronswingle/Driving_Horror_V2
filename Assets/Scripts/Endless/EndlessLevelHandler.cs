@@ -15,7 +15,7 @@ public class EndlessLevelHandler : MonoBehaviour
     WaitForSeconds waitFor100ms = new WaitForSeconds(0.1f);
 
     // How long sections are (prefabs)
-    private const float sectionLength = 100;
+    private const float sectionLength = 10;
     void Start()
     {
         //playerCarTransform = GameObject.FindGameObjectWithTag("Player").transform;

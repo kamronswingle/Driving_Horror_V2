@@ -10,11 +10,11 @@ public class CarHandler : MonoBehaviour
     Transform gameModel;
     
     // Max limits
-    private float maxSteerVelocity = 2f;
+    private float maxSteerVelocity = 10f;
     private float accelerationMultipler = 3f;
     private float breakMultipler = 15f;
     private float steeringMultiplier = 5f;
-    private float maxForwardVelocity = 15f;
+    private float maxForwardVelocity = 8f;
     
     Vector2 input = Vector2.zero;
     
