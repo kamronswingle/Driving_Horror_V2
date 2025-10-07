@@ -7,6 +7,8 @@ public class SettingsConfig : MonoBehaviour
 {
     public AudioMixer audioMixer;
     
+    public Slider volumeSlider;
+    
     public TMPro.TMP_Dropdown resolutionDropdown;
     
     Resolution[] resolutions;
@@ -16,6 +18,15 @@ public class SettingsConfig : MonoBehaviour
 
     private void Start()
     {
+        float savedVolume = PlayerPrefs.GetFloat("VolumeDB", 10f);
+        
+        
+        volumeSlider.minValue = -10f;
+        volumeSlider.maxValue = 20f;
+        volumeSlider.value = savedVolume;
+        
+        SetVolume(savedVolume);
+        
         resolutions = Screen.resolutions;
         
         resolutionDropdown.ClearOptions();
@@ -40,10 +51,10 @@ public class SettingsConfig : MonoBehaviour
         resolutionDropdown.value = currentResolutionIndex;
         resolutionDropdown.RefreshShownValue();
     }
-    public void SetVolume(float volume)
+    public void SetVolume(float dB)
     {
-        audioMixer.SetFloat("volume", volume);
-        PlayerPrefs.SetFloat("Volume", volume);
+        audioMixer.SetFloat("volume", dB);
+        PlayerPrefs.SetFloat("VolumeDB", dB);
     }
 
     public void SetQuality(int qualityIndex)

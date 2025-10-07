@@ -1,115 +1,65 @@
-using System.Collections;
 using UnityEngine;
 
 public class EndlessLevelHandler : MonoBehaviour
 {
-    [SerializeField]
-    GameObject[] sectionsPrefabs;
-    
-    GameObject[] sectionsPool = new GameObject[20];
-    
-    GameObject[] sections = new GameObject[10];
-
+    [SerializeField] private GameObject[] sectionPrefabs;  // Straight, curve, etc.
     [SerializeField] private Transform playerCarTransform;
-    
-    WaitForSeconds waitFor100ms = new WaitForSeconds(0.1f);
+    [SerializeField] private int visibleSections = 10;
 
-    // How long sections are (prefabs)
-    private const float sectionLength = 10;
+    private GameObject[] activeSections;
+    private int nextSpawnIndex = 0;
+
     void Start()
     {
-        //playerCarTransform = GameObject.FindGameObjectWithTag("Player").transform;
+        activeSections = new GameObject[visibleSections];
 
-        int prefabIndex = 0;
+        // First section at origin
+        GameObject first = Instantiate(sectionPrefabs[0], Vector3.zero, Quaternion.identity);
+        activeSections[0] = first;
 
-        // Creating a pool for endless sections
-        for (int i = 0; i < sectionsPool.Length; i++)
+        // Build initial chain
+        for (int i = 1; i < visibleSections; i++)
         {
-            sectionsPool[i] = Instantiate(sectionsPrefabs[prefabIndex]);
-            sectionsPool[i].SetActive(false);
-            
-            prefabIndex++;
+            RoadSection prevRS = activeSections[i - 1].GetComponent<RoadSection>();
 
-            // Looping the prefab index if we run out of prefabs (change later)
-            if (prefabIndex > sectionsPrefabs.Length - 1)
-            {
-                prefabIndex = 0;
-            }
-        }
-        
-        // Adding the first sections to the road
-        for (int i = 0; i < sections.Length; i++)
-        {
-            // Get a random section
-            GameObject randomSection = GetRandomSelectionFromPool();
-            
-            // Move it into position and set it to active
-            randomSection.transform.position = new Vector3(sectionsPool[i].transform.position.x, 0, i * sectionLength);
-            randomSection.SetActive(true);
-            
-            // Set the section in the array
-            sections[i] = randomSection;
-        }
+            GameObject nextGO = Instantiate(sectionPrefabs[Random.Range(0, sectionPrefabs.Length)]);
+            RoadSection nextRS = nextGO.GetComponent<RoadSection>();
 
-        StartCoroutine(UpdateLessOftenCo());
-    }
-
-    IEnumerator UpdateLessOftenCo()
-    {
-        while (true)
-        {
-            UpdateSectionsPositions();
-            yield return waitFor100ms;
+            SnapSection(prevRS, nextRS);
+            activeSections[i] = nextGO;
         }
     }
 
-    void UpdateSectionsPositions()
+    void Update()
     {
-        for (int i = 0; i < sections.Length; i++)
+        // When player is far past the oldest section, recycle it
+        if (Vector3.Distance(playerCarTransform.position, activeSections[nextSpawnIndex].transform.position) > 30f)
         {
-            // Check if section is too far behind
-            if (sections[i].transform.position.z - playerCarTransform.position.z < -sectionLength)
-            {
-                // Store the last position of the section and disable it
-                Vector3 lastSectionPosition = sections[i].transform.position;
-                sections[i].SetActive(false);
-                
-                sections[i] = GetRandomSelectionFromPool();
-                
-                // Move the new section into place and activate it
-                sections[i].transform.position = new Vector3(lastSectionPosition.x, 0, lastSectionPosition.z
-                    + sectionLength * sections.Length);
-                sections[i].SetActive(true);
-            }
+            int lastIndex = (nextSpawnIndex + visibleSections - 1) % visibleSections;
+
+            RoadSection prevRS = activeSections[lastIndex].GetComponent<RoadSection>();
+
+            GameObject recycled = activeSections[nextSpawnIndex];
+            RoadSection recycledRS = recycled.GetComponent<RoadSection>();
+
+            SnapSection(prevRS, recycledRS);
+
+            activeSections[nextSpawnIndex] = recycled;
+            nextSpawnIndex = (nextSpawnIndex + 1) % visibleSections;
         }
     }
 
-    private GameObject GetRandomSelectionFromPool()
+    /// <summary>
+    /// Aligns a new section so its EntryPoint matches the previous ExitPoint.
+    /// </summary>
+    private void SnapSection(RoadSection prev, RoadSection next)
     {
-        // Pick a random index and hope its available
-        int randomIndex = Random.Range(0, sections.Length);
+        // Temporarily align to exit
+        next.transform.position = prev.ExitPoint.position;
+        next.transform.rotation = prev.ExitPoint.rotation;
 
-        bool isNewSectionFound = false;
-
-        while (!isNewSectionFound)
-        {
-            // Check if the section is not active, in that case we have found a section
-            if (!sectionsPool[randomIndex].activeInHierarchy)
-            {
-                isNewSectionFound = true;
-            }
-            else
-            {
-                // If it was active we need to try to find another one so we increase the index
-                randomIndex++;
-                
-                // Ensure that we loop around if we reach the end of an array
-                if (randomIndex > sections.Length - 1)
-                {
-                    randomIndex = 0;
-                }
-            }
-        }
-        return sectionsPool[randomIndex];
+        // Shift so Entry aligns with Exit
+        Vector3 entryToRoot = next.transform.position - next.EntryPoint.position;
+        next.transform.position += entryToRoot;
     }
 }
