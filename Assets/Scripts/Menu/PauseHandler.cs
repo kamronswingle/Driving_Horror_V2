@@ -56,7 +56,7 @@ public class PauseHandler : MonoBehaviour
 
     public void Reset()
     {
-        // SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        // Currently Breaks the game
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        Time.timeScale = 1f;
     }
 }
